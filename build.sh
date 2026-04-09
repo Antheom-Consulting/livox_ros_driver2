@@ -4,9 +4,12 @@ readonly VERSION_ROS1="ROS1"
 readonly VERSION_ROS2="ROS2"
 readonly VERSION_HUMBLE="humble"
 
-pushd `pwd` > /dev/null
-cd `dirname $0`
-echo "Working Path: "`pwd`
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+
+pushd "${SCRIPT_DIR}" > /dev/null
+echo "Working Path: $(pwd)"
+echo "Workspace Root: ${WORKSPACE_ROOT}"
 
 ROS_VERSION=""
 ROS_HUMBLE=""
@@ -27,9 +30,10 @@ echo "ROS version is: "$ROS_VERSION
 
 # clear `build/` folder.
 # TODO: Do not clear these folders, if the last build is based on the same ROS version.
-rm -rf ../../build/
-rm -rf ../../devel/
-rm -rf ../../install/
+rm -rf "${WORKSPACE_ROOT}/build/"
+rm -rf "${WORKSPACE_ROOT}/devel/"
+rm -rf "${WORKSPACE_ROOT}/install/"
+rm -rf "${WORKSPACE_ROOT}/log/"
 # clear src/CMakeLists.txt if it exists.
 if [ -f ../CMakeLists.txt ]; then
     rm -f ../CMakeLists.txt
@@ -52,13 +56,11 @@ elif [ ${ROS_VERSION} = ${VERSION_ROS2} ]; then
 fi
 
 # build
-pushd `pwd` > /dev/null
+pushd "${WORKSPACE_ROOT}" > /dev/null
 if [ $ROS_VERSION = ${VERSION_ROS1} ]; then
-    cd ../../
     catkin_make -DROS_EDITION=${VERSION_ROS1}
 elif [ $ROS_VERSION = ${VERSION_ROS2} ]; then
-    cd ../../
-    colcon build --cmake-args -DROS_EDITION=${VERSION_ROS2} -DHUMBLE_ROS=${ROS_HUMBLE}
+    colcon build --symlink-install --packages-select livox_ros_driver2 --cmake-args -DROS_EDITION=${VERSION_ROS2} -DHUMBLE_ROS=${ROS_HUMBLE}
 fi
 popd > /dev/null
 
