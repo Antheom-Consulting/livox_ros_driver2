@@ -2,12 +2,13 @@ import os, json, sys
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
-xfer_format     = 0 #1 for custom msg, 0 for 29doflauncher
+xfer_format     = 1 #1 for custom msg, 0 for 29doflauncher
 multi_topic     = 0
 data_src        = 0
 publish_freq    = 10.0
 output_type     = 0
 frame_id        = 'mid360_link'
+imu_frame_id    = 'mid360_imu_link'
 lvx_file_path   = '/home/livox/livox_test.lvx'
 cmdline_bd_code = 'livox0000000001'
 cur_path        = os.path.split(os.path.realpath(__file__))[0] + '/'
@@ -46,6 +47,7 @@ def generate_launch_description():
         {"publish_freq": publish_freq},
         {"output_data_type": output_type},
         {"frame_id": frame_id},
+        {"imu_frame_id": imu_frame_id},
         {"lvx_file_path": lvx_file_path},
         {"user_config_path": tmp_config},
         {"cmdline_input_bd_code": cmdline_bd_code}
