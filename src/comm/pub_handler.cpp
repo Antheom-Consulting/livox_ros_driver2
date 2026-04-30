@@ -122,6 +122,14 @@ void PubHandler::OnLivoxLidarPointCloudCallback(uint32_t handle, const uint8_t d
       imu_data.acc_x = imu->acc_x;
       imu_data.acc_y = imu->acc_y;
       imu_data.acc_z = imu->acc_z;
+      uint32_t id = 0;
+      if (GetLidarId(LidarProtoType::kLivoxLidarType, handle, id)) {
+        std::unique_lock<std::mutex> lock(self->packet_mutex_);
+        auto extrinsic = self->lidar_extrinsics_.find(id);
+        if (extrinsic != self->lidar_extrinsics_.end()) {
+          ApplyExtrinsicToImu(BuildExtrinsic(extrinsic->second), imu_data);
+        }
+      }
       self->imu_callback_(&imu_data, self->imu_client_data_);
     }
     return;
@@ -272,6 +280,69 @@ uint64_t PubHandler::GetEthPacketTimestamp(uint8_t timestamp_type, uint8_t* time
   }
 
   return std::chrono::high_resolution_clock::now().time_since_epoch().count();
+}
+
+ExtParameterDetailed PubHandler::BuildExtrinsic(const LidarExtParameter& lidar_param) {
+  ExtParameterDetailed extrinsic = {
+    {0, 0, 0},
+    {
+      {1, 0, 0},
+      {0, 1, 1},
+      {0, 0, 1}
+    }
+  };
+  extrinsic.trans[0] = lidar_param.param.x;
+  extrinsic.trans[1] = lidar_param.param.y;
+  extrinsic.trans[2] = lidar_param.param.z;
+
+  double cos_roll = cos(static_cast<double>(lidar_param.param.roll * PI / 180.0));
+  double cos_pitch = cos(static_cast<double>(lidar_param.param.pitch * PI / 180.0));
+  double cos_yaw = cos(static_cast<double>(lidar_param.param.yaw * PI / 180.0));
+  double sin_roll = sin(static_cast<double>(lidar_param.param.roll * PI / 180.0));
+  double sin_pitch = sin(static_cast<double>(lidar_param.param.pitch * PI / 180.0));
+  double sin_yaw = sin(static_cast<double>(lidar_param.param.yaw * PI / 180.0));
+
+  extrinsic.rotation[0][0] = cos_pitch * cos_yaw;
+  extrinsic.rotation[0][1] = sin_roll * sin_pitch * cos_yaw - cos_roll * sin_yaw;
+  extrinsic.rotation[0][2] = cos_roll * sin_pitch * cos_yaw + sin_roll * sin_yaw;
+
+  extrinsic.rotation[1][0] = cos_pitch * sin_yaw;
+  extrinsic.rotation[1][1] = sin_roll * sin_pitch * sin_yaw + cos_roll * cos_yaw;
+  extrinsic.rotation[1][2] = cos_roll * sin_pitch * sin_yaw - sin_roll * cos_yaw;
+
+  extrinsic.rotation[2][0] = -sin_pitch;
+  extrinsic.rotation[2][1] = sin_roll * cos_pitch;
+  extrinsic.rotation[2][2] = cos_roll * cos_pitch;
+
+  return extrinsic;
+}
+
+void PubHandler::ApplyExtrinsicToImu(const ExtParameterDetailed& extrinsic, ImuData& imu_data) {
+  const auto gyro_x = imu_data.gyro_x;
+  const auto gyro_y = imu_data.gyro_y;
+  const auto gyro_z = imu_data.gyro_z;
+  const auto acc_x = imu_data.acc_x;
+  const auto acc_y = imu_data.acc_y;
+  const auto acc_z = imu_data.acc_z;
+
+  imu_data.gyro_x = gyro_x * extrinsic.rotation[0][0] +
+                    gyro_y * extrinsic.rotation[0][1] +
+                    gyro_z * extrinsic.rotation[0][2];
+  imu_data.gyro_y = gyro_x * extrinsic.rotation[1][0] +
+                    gyro_y * extrinsic.rotation[1][1] +
+                    gyro_z * extrinsic.rotation[1][2];
+  imu_data.gyro_z = gyro_x * extrinsic.rotation[2][0] +
+                    gyro_y * extrinsic.rotation[2][1] +
+                    gyro_z * extrinsic.rotation[2][2];
+  imu_data.acc_x = acc_x * extrinsic.rotation[0][0] +
+                   acc_y * extrinsic.rotation[0][1] +
+                   acc_z * extrinsic.rotation[0][2];
+  imu_data.acc_y = acc_x * extrinsic.rotation[1][0] +
+                   acc_y * extrinsic.rotation[1][1] +
+                   acc_z * extrinsic.rotation[1][2];
+  imu_data.acc_z = acc_x * extrinsic.rotation[2][0] +
+                   acc_y * extrinsic.rotation[2][1] +
+                   acc_z * extrinsic.rotation[2][2];
 }
 
 /*******************************/
