@@ -4,6 +4,11 @@ if(ROS_EDITION STREQUAL "ROS1")
   # Copyright(c) 2019 livoxtech limited.
 
   cmake_minimum_required(VERSION 3.0)
+  foreach(policy CMP0144 CMP0148 CMP0167)
+    if(POLICY ${policy})
+      cmake_policy(SET ${policy} OLD)
+    endif()
+  endforeach()
 
 
   #---------------------------------------------------------------------------------------
@@ -189,6 +194,11 @@ else(ROS_EDITION STREQUAL "ROS2")
   # Copyright(c) 2020 livoxtech limited.
 
   cmake_minimum_required(VERSION 3.14)
+  foreach(policy CMP0144 CMP0148 CMP0167)
+    if(POLICY ${policy})
+      cmake_policy(SET ${policy} OLD)
+    endif()
+  endforeach()
   project(livox_ros_driver2)
 
   # Default to C99
