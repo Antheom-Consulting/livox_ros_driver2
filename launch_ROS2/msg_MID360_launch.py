@@ -14,13 +14,13 @@ cmdline_bd_code = 'livox0000000001'
 cur_path        = os.path.split(os.path.realpath(__file__))[0] + '/'
 cur_config_path = cur_path + '../config'
 config_path     = os.path.join(cur_config_path, 'MID360_config.json')
-# host = laptop (always 192.168.123.100)
+# host = internal Jetson on robot LAN
 # lidar = LiDAR unit IP
 # robot: LiDAR is at 192.168.123.200
 # dolly: LiDAR is at 192.168.123.120
 CONFIGS = {
-    'robot': {'host': '192.168.123.100', 'lidar': '192.168.123.120'},
-    'dolly': {'host': '192.168.123.100', 'lidar': '192.168.123.120'},
+    'robot': {'host': '192.168.123.164', 'lidar': '192.168.123.120'},
+    'dolly': {'host': '192.168.123.164', 'lidar': '192.168.123.120'},
 }
 def generate_launch_description():
     mode = 'robot'
